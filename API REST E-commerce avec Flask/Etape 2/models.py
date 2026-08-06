@@ -16,7 +16,7 @@ class Utilisateur(db.Model):
     date_creation = db.Column(db.DateTime, default=datetime.utcnow) # Date de création du compte 
     
     def __repr__(self):
-        return f'<Utilisateur {self.name}>'
+        return f'<Utilisateur {self.nom}>'
 
 class Produit(db.Model):
     __tablename__ = 'produits'
