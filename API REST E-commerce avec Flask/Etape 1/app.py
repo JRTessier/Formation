@@ -4,11 +4,15 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 from models import db, Utilisateur
 
+# Clé secrète JWT
+# Dans un vrai projet, à déplacer dans une variable d'environnement (.env) ou config.py.
 JWT_SECRET = "d3fb12750c2eff92120742e1b334479e"
 
 app = Flask(__name__)
 
-# Connexion et génération de token JWT
+############################################
+### Connexion et génération de token JWT ###
+############################################
 def decode_token(token):
     try:
         return jwt.decode(
@@ -19,10 +23,16 @@ def decode_token(token):
     except Exception:
         print("Jeton JWT invalide.")
         return
-    
+
+def get_token_from_header():
+    authorization_header = request.headers.get("Authorization", "")
+    if authorization_header.startswith("Bearer "):
+        return authorization_header[7:]  # Supprime "Bearer " du début
+    return authorization_header
+
 def require_authentication(f):
     def wrapper(**kwargs):
-        token = request.headers.get("Authorization", "0")
+        token = get_token_from_header()
         if not decode_token(token):
             return {"error": "Jeton d'accès invalide."}, 401
         return f(**kwargs)
@@ -31,18 +41,23 @@ def require_authentication(f):
 @app.route('/api/auth/login', methods=["POST"])
 def generate_token():
     body = request.get_json()
-    if body and body.get("password", "") == "blent":
-        token = jwt.encode(
-            {
-                "exp": datetime.utcnow() + timedelta(hours=1),
-                "user": "blentie"
-            },
-            JWT_SECRET,
-            algorithm="HS256"
-        )
-        return jsonify({"token": token}), 200
-    else:
-        return jsonify({"error": "Mot de passe invalide."}), 401
+
+    if not body or not body.get("email") or not body.get("mot_de_passe"):
+        return jsonify({"error": "Email et mot de passe sont requis."}), 400
+
+    utilisateur = Utilisateur.query.filter_by(email=body.get("email")).first()
+    if not utilisateur or utilisateur.mot_de_passe != body.get("mot_de_passe"):
+        return jsonify({"error": "Email ou mot de passe invalide."}), 401
+
+    token = jwt.encode(
+        {
+            "exp": datetime.utcnow() + timedelta(hours=1),
+            "user": utilisateur.email
+        },
+        JWT_SECRET,
+        algorithm="HS256"
+    )
+    return jsonify({"token": token}), 200
     
 
 @app.route('/predict', methods=["GET"])
