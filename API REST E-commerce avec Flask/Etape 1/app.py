@@ -3,6 +3,7 @@ import jwt
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 from models import db, Utilisateur
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Clé secrète JWT
 # Dans un vrai projet, à déplacer dans une variable d'environnement (.env) ou config.py.
@@ -46,7 +47,7 @@ def generate_token():
         return jsonify({"error": "Email et mot de passe sont requis."}), 400
 
     utilisateur = Utilisateur.query.filter_by(email=body.get("email")).first()
-    if not utilisateur or utilisateur.mot_de_passe != body.get("mot_de_passe"):
+    if not utilisateur or not check_password_hash(utilisateur.mot_de_passe, body.get("mot_de_passe")):
         return jsonify({"error": "Email ou mot de passe invalide."}), 401
 
     token = jwt.encode(
@@ -84,13 +85,10 @@ def register_user():
     if utilisateur_existant:
         return jsonify({"error": "Un utilisateur avec cet email existe déjà."}), 409
 
-    # Hachage du mot de passe
-    mot_de_passe_hache = mot_de_passe  # A remplacer par un vrai hachage dans une application réelle
-
     # Création du nouvel utilisateur
     nouvel_utilisateur = Utilisateur(
         email=email,
-        mot_de_passe=mot_de_passe_hache,
+        mot_de_passe = generate_password_hash(mot_de_passe), # HAshage du mot de passe pour la sécurité
         nom=nom,
         role=role
     )

@@ -3,6 +3,7 @@ import jwt
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 from models import db, Utilisateur, Produit, Commande, LigneCommande
+from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
 # Clé secrète JWT
@@ -48,7 +49,7 @@ def generate_token():
         return jsonify({"error": "Email et mot de passe sont requis."}), 400
 
     utilisateur = Utilisateur.query.filter_by(email=body.get("email")).first()
-    if not utilisateur or utilisateur.mot_de_passe != body.get("mot_de_passe"):
+    if not utilisateur or not check_password_hash(utilisateur.mot_de_passe, body.get("mot_de_passe")):
         return jsonify({"error": "Email ou mot de passe invalide."}), 401
 
     token = jwt.encode(
@@ -88,13 +89,10 @@ def register_user():
     if utilisateur_existant:
         return jsonify({"error": "Un utilisateur avec cet email existe déjà."}), 409
 
-    # Hachage du mot de passe
-    mot_de_passe_hache = mot_de_passe  # A remplacer par un vrai hachage dans une application réelle
-
     # Création du nouvel utilisateur
     nouvel_utilisateur = Utilisateur(
         email=email,
-        mot_de_passe=mot_de_passe_hache,
+        mot_de_passe = generate_password_hash(mot_de_passe), # HAshage du mot de passe pour la sécurité
         nom=nom,
         role=role
     )
@@ -145,6 +143,7 @@ def product_list():
             "id": produit.id,
             "nom": produit.nom,
             "description": produit.description,
+            "categorie": produit.categorie,
             "prix": produit.prix,
             "quantite_stock": produit.quantite_stock,
             "date_creation": produit.date_creation.isoformat()
@@ -169,6 +168,7 @@ def product_get(id):
         "id": this_product.id,
         "nom": this_product.nom,
         "description": this_product.description,
+        "categorie": this_product.categorie,
         "prix": this_product.prix,
         "quantite_stock": this_product.quantite_stock,
         "date_creation": this_product.date_creation.isoformat()
@@ -179,12 +179,13 @@ def product_get(id):
 @require_admin
 def product_create():
     data = request.get_json()
-    if not data or not data.get("nom") or not data.get("prix") or not data.get("quantite_stock"):
+    if not data or not data.get("nom") or not data.get("prix") or not data.get("quantite_stock") or not data.get("categorie"):
         return jsonify({"error": "Tous les champs obligatoires ne sont pas remplis."}), 400
 
     new_product = Produit(
         nom=data.get("nom"),
         description=data.get("description", ""),
+        categorie=data.get("categorie", ""),
         prix=data.get("prix"),
         quantite_stock=data.get("quantite_stock")
     )
@@ -198,6 +199,7 @@ def product_create():
                 "id": new_product.id,
                 "nom": new_product.nom,
                 "description": new_product.description,
+                "categorie": new_product.categorie,
                 "prix": new_product.prix,
                 "quantite_stock": new_product.quantite_stock,
                 "date_creation": new_product.date_creation.isoformat()
@@ -212,7 +214,7 @@ def product_create():
 @require_admin
 def product_update(id):
     data = request.get_json()
-    if not data or not data.get("nom") or not data.get("prix") or not data.get("quantite_stock"):
+    if not data or not data.get("nom") or not data.get("prix") or not data.get("quantite_stock") or not data.get("categorie"):
         return jsonify({"error": "Tous les champs obligatoires ne sont pas remplis."}), 400
 
     product_to_update = Produit.query.get(id)
@@ -221,6 +223,7 @@ def product_update(id):
 
     product_to_update.nom = data.get("nom")
     product_to_update.description = data.get("description", "")
+    product_to_update.categorie = data.get("categorie", "")
     product_to_update.prix = data.get("prix")
     product_to_update.quantite_stock = data.get("quantite_stock")
 
@@ -232,6 +235,7 @@ def product_update(id):
                 "id": product_to_update.id,
                 "nom": product_to_update.nom,
                 "description": product_to_update.description,
+                "categorie": product_to_update.categorie,
                 "prix": product_to_update.prix,
                 "quantite_stock": product_to_update.quantite_stock,
                 "date_creation": product_to_update.date_creation.isoformat()
@@ -329,19 +333,58 @@ def order_create():
     if not data or not data.get("adresse_livraison"):
         return jsonify({"error": "L'adresse de livraison est obligatoire."}), 400
 
+    produits_commandes = data.get("produits")
+    if not produits_commandes or not isinstance(produits_commandes, list) or len(produits_commandes) == 0:
+        return jsonify({"error": "La commande doit contenir au moins un produit."}), 400
+
     utilisateur = Utilisateur.query.filter_by(email=user_email).first()
     if not utilisateur:
         return jsonify({"error": "Utilisateur non trouvé."}), 404
 
-    new_order = Commande(
-        utilisateur_id=utilisateur.id,
-        adresse_livraison=data.get("adresse_livraison"),
-        statut="en attente"
-    )
+    # Verification de chaque ligne avant toute modification (produit existe et stock suffisant)
+    for item in produits_commandes:
+        produit_id = item.get("produit_id")
+        quantite = item.get("quantite")
 
+        if not produit_id or not quantite or quantite <= 0:
+            return jsonify({"error": "Chaque produit doit avoir un ID et une quantité valide."}), 400
+
+        produit = Produit.query.get(produit_id)
+        if produit is None:
+            return jsonify({"error": f"Produit avec ID {produit_id} non trouvé."}), 404
+
+        if produit.quantite_stock < quantite:
+            return jsonify({"error": f"Stock insuffisant pour le produit {produit.nom}. Disponible : {produit.quantite_stock}, demandé : {quantite}."}), 400
+
+    # Création de la commande
     try:
+        new_order = Commande(
+            utilisateur_id=utilisateur.id,
+            adresse_livraison=data.get("adresse_livraison"),
+            statut="en_attente"
+        )
         db.session.add(new_order)
+        db.session.flush()
+
+        lignes_crees = []
+        for item in produits_commandes:
+            produit = Produit.query.get(item.get("produit_id"))
+            quantite = item.get("quantite")
+
+            nouvelle_ligne = LigneCommande(
+                commande_id=new_order.id,
+                produit_id=produit.id,
+                quantite=quantite,
+                prix_unitaire=produit.prix
+            )
+            db.session.add(nouvelle_ligne)
+            lignes_crees.append(nouvelle_ligne)
+
+            # Mise à jour du stock du produit
+            produit.quantite_stock -= quantite
+
         db.session.commit()
+
         return jsonify({
             "message": "Commande créée avec succès.",
             "commande": {
@@ -349,7 +392,15 @@ def order_create():
                 "utilisateur_id": new_order.utilisateur_id,
                 "date_commande": new_order.date_commande.isoformat(),
                 "adresse_livraison": new_order.adresse_livraison,
-                "statut": new_order.statut
+                "statut": new_order.statut,
+                "lignes": [
+                    {
+                        "produit_id": ligne.produit_id,
+                        "quantite": ligne.quantite, 
+                        "prix_unitaire": ligne.prix_unitaire
+                    }
+                    for ligne in lignes_crees
+                ]
             }
         }), 201
     except Exception as e:
