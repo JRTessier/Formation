@@ -3,6 +3,7 @@ import jwt
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 from models import db, Utilisateur, Produit
+from functools import wraps
 
 # Clé secrète JWT
 # Dans un vrai projet, à déplacer dans une variable d'environnement (.env) ou config.py.
@@ -31,6 +32,7 @@ def get_token_from_header():
     return authorization_header
 
 def require_authentication(f):
+    @wraps(f)
     def wrapper(**kwargs):
         token = get_token_from_header()
         if not decode_token(token):
@@ -117,6 +119,7 @@ def register_user():
 
 # Decorateur pour gatekeeper les routes nécessitant un rôle administrateur
 def require_admin(f):
+    @wraps(f)
     def wrapper(**kwargs):
         token = get_token_from_header()
         decoded_token = decode_token(token)
