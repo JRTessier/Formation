@@ -136,7 +136,17 @@ def require_admin(f):
 # Récupérer la liste des produits
 @app.route('/api/produits', methods=["GET"])
 def product_list():
-    produits = Produit.query.all()
+    query = Produit.query
+
+    nom_recherche = request.args.get("nom")
+    if nom_recherche:
+        query = query.filter(Produit.nom.ilike(f"%{nom_recherche}%"))
+
+    categorie_recherche = request.args.get("categorie")
+    if categorie_recherche:
+        query = query.filter(Produit.categorie.ilike(f"%{categorie_recherche}%"))
+
+    produits = query.all()
 
     liste_produits = [
         {
