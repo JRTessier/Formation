@@ -12,5 +12,5 @@ instance/
 # Projet RAG finance
 Agent conversationnel RAG - finance/vectorstore/*
 !Agent conversationnel RAG - finance/vectorstore/.gitkeep
-Agent conversationnel RAG - finance/data/pdfs/*
-!Agent conversationnel RAG - finance/data/pdfs/.gitkeep
+Agent conversationnel RAG - finance/data/DIC/*
+!Agent conversationnel RAG - finance/data/DIC/.gitkeep
