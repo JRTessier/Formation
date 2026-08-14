@@ -14,3 +14,5 @@ Agent conversationnel RAG - finance/vectorstore/*
 !Agent conversationnel RAG - finance/vectorstore/.gitkeep
 Agent conversationnel RAG - finance/data/DIC/*
 !Agent conversationnel RAG - finance/data/DIC/.gitkeep
+Agent conversationnel RAG - finance/models/*
+!Agent conversationnel RAG - finance/models/.gitkeep
