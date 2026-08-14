@@ -1,3 +1,6 @@
 langchain-community
 pypdf
 pymupdf
+langchain-huggingface
+faiss-cpu
+sentence-transformers

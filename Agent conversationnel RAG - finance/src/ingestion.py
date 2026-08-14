@@ -3,11 +3,13 @@ Découpage des documents PDF, embedding et stockage mémoire avec FAISS
 """
 
 import glob
+from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader, PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
 # Initialisation de la liste qui va contenir tous les documents chargés
 documents = []
@@ -43,12 +45,22 @@ chunks = text_splitter.split_documents(documents=documents)
 
 # Affichage du nombre de morceaux créés à partir du document PDF
 print(f"{len(chunks)} chunks ont été créés par le splitter à partir du document PDF.")
-print(chunks[0].page_content)
+# print(chunks[0].page_content)
 
 
 # --- EMBEDDING ---
 
-# Charger le modèle d'encodage de texte paraphrase-multilingual-mpnet-base-v2 de HuggingFace qui supporte le français
-embedding = HuggingFaceEmbeddings(model_name="paraphrase-multilingual-mpnet-base-v2", encode_kwargs={"normalize_embeddings": True})
+# Charger le modèle d'encodage de texte paraphrase-multilingual-mpnet-base-v2 de HuggingFace qui supporte le français avec de bon résultat :
+embedding = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+    encode_kwargs={"normalize_embeddings": True}
+)
 
 # --- Stockage FAISS ---
+# Création du Vector Store FAISS et vectorisation des chunks...
+vector_store = FAISS.from_documents(documents=chunks, embedding=embedding)
+
+# Sauvegarde locale
+vectorstore_dir = Path("vectorstore")
+vectorstore_dir.mkdir(exist_ok=True)
+vector_store.save_local(str(vectorstore_dir))
