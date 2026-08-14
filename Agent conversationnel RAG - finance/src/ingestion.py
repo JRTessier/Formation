@@ -7,9 +7,10 @@ from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader, PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+
+# --- PARSING ---
 
 # Initialisation de la liste qui va contenir tous les documents chargés
 documents = []
@@ -32,6 +33,9 @@ for file in glob.glob("data/DIC/*.pdf"):
 print(f"{len(documents)} pages chargées au total.")
 # print(documents[9].page_content[:500])
 
+
+# --- CHUNKING ---
+
 # Initialisation du séparateur de texte avec des paramètres spécifiques pour diviser le texte
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=600,  # Taille maximale des morceaux de texte
@@ -50,13 +54,14 @@ print(f"{len(chunks)} chunks ont été créés par le splitter à partir du docu
 
 # --- EMBEDDING ---
 
-# Charger le modèle d'encodage de texte paraphrase-multilingual-mpnet-base-v2 de HuggingFace qui supporte le français avec de bon résultat :
+# Charger le modèle d'encodage de texte paraphrase-multilingual-mpnet-base-v2 de HuggingFace qui supporte le français avec de bons résultats :
 embedding = HuggingFaceEmbeddings(
     model_name="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
     encode_kwargs={"normalize_embeddings": True}
 )
 
 # --- Stockage FAISS ---
+
 # Création du Vector Store FAISS et vectorisation des chunks...
 vector_store = FAISS.from_documents(documents=chunks, embedding=embedding)
 
