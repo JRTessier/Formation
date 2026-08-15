@@ -3,9 +3,10 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from huggingface_hub import hf_hub_download
 from langchain_community.chat_models import ChatLlamaCpp
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 
 
 # Charger le modèle d'encodage de texte paraphrase-multilingual-mpnet-base-v2 de HuggingFace qui supporte le français avec de bons résultats :
@@ -21,7 +22,7 @@ vector_store = FAISS.load_local(
     allow_dangerous_deserialization=True
 )
 
-retriever = vector_store.as_retriever(search_kwargs={"k":4})
+retriever = vector_store.as_retriever(search_kwargs={"k":8})
 
 # Charger le modèle LLM si absent
 MODEL_REPO = "bartowski/Mistral-7B-Instruct-v0.3-GGUF"
@@ -44,54 +45,49 @@ llm = ChatLlamaCpp(
     verbose=False # logs internes
 )
 
-# --- Test rapide du LLM seul, sans RAG pour l'instant ---
-#response = llm.invoke("Bonjour assitant !")
-#print(response.content)
+# --- Reformulation de la question à l'aide de l'historique ---
+contextualize_prompt = ChatPromptTemplate.from_messages([
+    ("system", "Reformule la dernière question de l'utilisateur en une question autonome et complète, "
+                "compréhensible sans l'historique de conversation. Ne réponds pas à la question, "
+                "reformule-la seulement. Si elle est déjà autonome, renvoie-la telle quelle."),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+])
 
-# --- Formatage du contexte récupéré, avec la source de chaque chunk ---
-def format_docs(retrieved_docs):
-    formatted = []
-    for doc in retrieved_docs:
-        source = doc.metadata.get("source", "source inconnue")
-        page = doc.metadata.get("page", "?")
-        formatted.append(f"[Source: {source}, page {page}]\n{doc.page_content}")
-    return "\n\n".join(formatted)
+history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_prompt)
 
-# --- Prompt avec consigne de sourcing ---
-prompt = ChatPromptTemplate.from_template(
-    """Tu es un assistant de chat destiné aux équipes du département ALM d'une grande entreprise d'assurance vie.
-    Tu réponds aux questions en te basant uniquement sur les documents d'informations clé (DIC) fournis.
+# --- Génération de la réponse, avec contexte + historique + source ---
+qa_prompt = ChatPromptTemplate.from_messages([
+    ("system", """Tu es un assistant destiné aux équipes ALM d'une entreprise d'assurance vie.
+Tu réponds aux questions en te basant uniquement sur les extraits de DIC fournis ci-dessous.
 
-    Règles à suivre :
-    - Réponds uniquement à partir des informations contenues dans le contexte fourni.
-    - Si l'information ne se trouve pas dans le contexte, dis simplement et sans détours que cette information n'est pas disponible dans la base de données. Ne substitue JAMAIS l'information d'un autre fonds.
-    - Cite systématiquement la source (nom du fichier et page) de chaque information que tu utilises.
-    - Fait des réponses courtes et factuelles qui vont à l'essentiel et donnent l'information recherchée.
-    - Si la question mentionne un fonds ou un produit précis, vérifie que le contexte fourni concerne bien CE fonds précis (regarde le nom du fonds et la source) avant de répondre.
-    
-    Contexte:
-    {context}
+Règles impératives :
+- Réponds uniquement à partir des informations contenues dans le contexte fourni.
+- Si l'information ne se trouve pas dans le contexte, dis-le clairement plutôt que d'inventer.
+- Cite systématiquement la source (nom du fichier et page) de chaque information utilisée.
+- Reste concis et factuel.
 
-    Question: {question}
+Contexte:
+{context}"""),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}"),
+])
 
-    Réponse:"""
-)
+question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
-# --- Assemblage de la chaîne RAG ---
-rag_chain = (
-    {"context": retriever | format_docs, "question": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
 
-print("\n=== Chunks Allianz dans l'index ===")
-all_docs = vector_store.docstore._dict.values()
-allianz_chunks = [doc for doc in all_docs if "Allianz" in doc.metadata.get("source", "")]
+# --- Conversation avec mémoire ---
+chat_history = []
 
-print(f"{len(allianz_chunks)} chunks Allianz trouvés dans l'index.\n")
+while True:
+        question = input("Vous : ")
+        if question.lower() in ("quit", "exit"):
+             break
 
-for i, doc in enumerate(allianz_chunks):
-    print(f"--- Chunk Allianz {i} (page {doc.metadata.get('page')}) ---")
-    print(doc.page_content)
-    print()
+        response = rag_chain.invoke({"input": question, "chat_history": chat_history})
+
+        print(f"\nAssistant : {response['answer']}\n")
+
+        chat_history.append(HumanMessage(content=question))
+        chat_history.append(AIMessage(content=response["answer"]))

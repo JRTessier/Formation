@@ -38,8 +38,8 @@ print(f"{len(documents)} pages chargées au total.")
 
 # Initialisation du séparateur de texte avec des paramètres spécifiques pour diviser le texte
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=600,  # Taille maximale des morceaux de texte
-    chunk_overlap=60,  # Chevauchement entre les morceaux pour garder le contexte
+    chunk_size=1000,  # Taille maximale des morceaux de texte
+    chunk_overlap=100,  # Chevauchement entre les morceaux pour garder le contexte
     length_function=len,  # Fonction pour calculer la longueur des morceaux
     separators=["\n\n", "\n"]  # Séparateurs utilisés pour diviser le texte en morceaux
 )
