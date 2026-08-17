@@ -31,7 +31,7 @@ Création du fichier `evaluate.py` dont résulte le F1 Bert Score appliqué au d
 
 Révision du prompt dans `rag_pipeline.py`.
 
-La première version du prompt provoquait un excès de réponses du type "je ne suis pas un expert" ou "je n'ai pas accès à ce document", même quand l'information était présente dans le contexte. Corrigé partiellement en interdisant explicitement ces formulations et en ajoutant un exemple de réponse attendue.
+- Lors de l'évaluation j'ai découvert une erreur d'utilisation du rôle `"system"` dans le prompt. `Mistral-7B-Instruct` ne supporte pas le rôle `"system"` et était silencieusement ignoré. Le contenu initialement prévu pour `"system"` a été déplacé dans le rôle `"human"`.
 
 
 ## Choix techniques
@@ -54,11 +54,11 @@ J'ai volontairement pris le partie d'utiliser `FAISS` plutôt que ChromaDB afin 
 
 ## Résultats de l'évaluation
 
-F1 Bert Score moyen : **63.47%**<br>
-Précision moyenne : 60.22%<br>
-Rappel moyen : 67.37%<br>
+F1 Bert Score moyen : **70.90%**<br>
+Précision moyenne : 67.14%<br>
+Rappel moyen : 75.52%<br>
 
 
-## Observations
+## Notes et observations
 - Bon nombre de réponses de `answer.json` semblent tronquées. Et certaines questions de `queries.json` manquent de contexte ("Quel est l'objectif de gestion du FCP décrit dans le document ?"). On peut donc imaginer que le score obtenue est assez cohérent vis à vis du bruit du dataset de référence.
-- A noter également que le modèle peine à suivre la consigne du style concis et factuel qui vise à réduire le côté verbeux des réponses. Tendance qui se ressent probablement dans le score de précision plus bas (60.22%).
+- Une fois que le problème du rôle `"system"` ignoré silencieusement a été corrigé, une seule réponse prenait plus de 2 minutes ! Les logs internes de `ChatLlamaCpp` ont montré que le temps était perdu dans `prompt eval time`, la lecture du prompt. En augmentant la valeur de `n_batch` à 512 (contre 8 par défaut) le gain de temps est considérable.

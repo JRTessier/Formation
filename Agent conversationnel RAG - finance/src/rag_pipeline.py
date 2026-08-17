@@ -40,6 +40,7 @@ def build_rag_chain():
     llm = ChatLlamaCpp(
         model_path=str(model_path),
         n_ctx=4096, # nb de token max par fenêtre, à ajuster en fonction des résultats (texte coupé...)
+        n_batch=512, # traite le prompt par blocs de 512 tokens plutôt que 8 --> gagne en rapidité
         n_gpu_layers=-1, # Combien de couches de calcul doivent être exécutées sur le GPU plutôt que sur le CPU (-1 = toutes les couches possibles).
         temperature=0.1, # dégré d'aléatoire (déterministe 0 <-> 2 créatif, varié)
         verbose=False # logs internes
@@ -47,9 +48,7 @@ def build_rag_chain():
 
     # --- Reformulation de la question à l'aide de l'historique ---
     contextualize_prompt = ChatPromptTemplate.from_messages([
-        ("system", "Reformule la dernière question de l'utilisateur en une question autonome et complète, "
-                    "compréhensible sans l'historique de conversation. Ne réponds pas à la question, "
-                    "reformule-la seulement. Si elle est déjà autonome, renvoie-la telle quelle."),
+        ("human", "Reformule la dernière question de l'utilisateur en une question autonome et complète compréhensible sans l'historique de conversation. Ne réponds pas à la question, reformule-la seulement. Si elle est déjà autonome, renvoie-la telle quelle."),
         MessagesPlaceholder("chat_history"),
         ("human", "{input}"),
     ])
@@ -58,25 +57,30 @@ def build_rag_chain():
 
     # --- Génération de la réponse, avec contexte + historique + source ---
     qa_prompt = ChatPromptTemplate.from_messages([
-        ("system", """Tu es un assistant de chat destiné aux équipes du département ALM (gestion des actifs / passifs) d'une grande entreprise d'assurance vie.
-    Ton rôle est d'aider les équipes à retrouver facilement des informations éparpillées dans l'ensemble des DIC (documents d'informations clé) à disposition.
-    Tu réponds donc aux questions en te basant uniquement sur le contenu des DIC.
-
-    Règles impératives :
-    - Réponds uniquement à partir des informations contenues dans le contexte fourni.
-    - Si l'information ne se trouve pas dans le contexte, ne répond pas à la question et dis "Cette information n'est pas disponible dans la base de données."
-    - Cite systématiquement la source (nom du fichier et page) de chaque information utilisée.
-    - Reste concis et factuel. Va à l'essentiel en délivrant mécaniquement l'information cherchée.
-    - Ne débute jamais ta réponse en reprenant la question. Privilégie de commencer ta réponse avec un verbe à l'infinitif.
-
-    Exemple de question et de réponse attendue :
-    Question : "Quelle est la classification du fonds Federal Indiciel Japon ?"
-    Réponse : "Actions internationales"
-
-    Contexte:
-    {context}"""),
         MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
+        ("human", """Tu es un assistant de chat destiné aux équipes du département ALM (gestion des actifs / passifs) d'une grande entreprise d'assurance vie.
+            Ton rôle est d'aider les équipes à retrouver facilement des informations éparpillées dans l'ensemble des DIC (documents d'informations clé) à disposition.
+            Tu réponds donc aux questions en te basant uniquement sur le contenu des DIC.
+
+            Dans ce contexte, ALM signifie Asset Liability Management (gestion des actifs et des passifs), et DIC signifie Document d'Informations Clés, Ne confonds jamais ces sigles avec d'autres significations.
+
+            Règles impératives :
+            - Réponds uniquement à partir des informations contenues dans le contexte fourni.
+            - N'utilise JAMAIS tes connaissances générales pour compléter ou remplacer le contexte.
+            - Si le contexte ne permet pas de répondre à la question posée, réponds uniquement : "Cette information n'est pas disponible dans la base de données."
+            - Cite systématiquement la source (nom du fichier et page) de chaque information utilisée.
+            - Reste concis et factuel. Va à l'essentiel en délivrant mécaniquement l'information cherchée.
+            - Ne débute jamais ta réponse en reprenant la question. Commence directement par l'information, avec un verbe à l'infinitif si la formulation d'y prête.
+
+            Exemple de question et de réponse attendue :
+            Question : "Quelle est la classification du fonds Federal Indiciel Japon ?"
+            Réponse : "Actions internationales"
+
+            Contexte:
+            {context}
+
+            Question : {input}"""
+         ),
     ])
 
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
