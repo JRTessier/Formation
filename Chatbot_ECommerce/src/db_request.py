@@ -6,19 +6,16 @@ DB_PATH = Path(__file__).parent.parent / "data" / "orders.db"
 
 
 # Requete sur une commande
-def get_order_by_id(order_id: int):
+def get_order_by_id(order_id: int, user_id: int) -> dict | None:
     conn = sqlite3.connect(DB_PATH) # ouvre la connexion au fichier .db
     conn.row_factory = sqlite3.Row # configure cette connexion pour obtenir un dictionnaire en sortie
-    cursor = conn.execute("SELECT * FROM orders WHERE order_id = ?", (order_id,)) # excute la requete sur cette connexion
+    cursor = conn.execute("SELECT * FROM orders WHERE order_id = ? AND user_id = ?", (order_id, user_id),) # excute la requete sur cette connexion
     ligne = cursor.fetchone()
     conn.close()
     return dict(ligne) if ligne else None
 
-# Tranduction du status de la commande en langage naturel
-# status
-# date_purchase
-# date_shipped
-# date_delivered
+# Tranduction des infos de la commande en langage naturel
+# status, date_purchase, date_shipped, date_delivered
 
 STATUS_LABELS = {
     "invoiced": "validée et payée. Elle n'est pas encore expédiée.",
