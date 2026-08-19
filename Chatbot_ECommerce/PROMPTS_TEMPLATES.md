@@ -3,32 +3,43 @@
 Le pipeline se base sur l'utilisation de trois prompts avec chacun leur rôle respectif.
 `ROUTER_PROMPT`, `INTENTION_PROMPT`, `EXTRACTION_PROMPT`
 
-## Architetcure générale du pipeline (`pipeline.py`)
+## Architecture générale du pipeline (`pipeline.py`)
 
 ```
     Question utilisateur
             |
             v
-    [1] ROUTER_PROMPT
+    [1] CONTEXTUALIZE_PROMPT
+        reformulation en question autonome
+            |
+            v
+    [2] ROUTER_PROMPT
         routage sémantique : est-ce une question SAV ?
             |
             v (if True)
-    [2] INTENTION_PROMPT
-        classification d'intention : le client recherche une info ou une aide ?
+    [3] INTENTION_PROMPT
+        classification d'intention : l'utilisateur recherche une info ou une aide ?
             |
             v (if "info")
-    [3] EXTRACTION_PROMPT
+    [4] EXTRACTION_PROMPT
         Extraction du numéro de commande à partir de la question utilisateur.
             |
             v
     Requête SQL
 ```
 
-## 1. Routage sémantique
+## 1. Contextualisation de la question
+
+`CONTEXTUALIZE_PROMPT`dans `contextualizer.py`
+
+On commence par reformuler la question de l'utilisateur en utilisant le context de l'historique de conversation. Ainsi on s'assure une fluidité pour l'utilisateur. (ex: *"où en est ma commande ?", "pouvez-vous me fournir le numéro de votre commande?", "n°2", etc...*)<br>
+La question ne passe pas par le prompt si l'historique est vide.
+
+## 2. Routage sémantique
 
 `ROUTER_PROMPT`dans `router.py`
 
-On commence par définir si la question de l'utilisateur est légitime. Est-ce que sa question relève du SAV ?
+On défini si la question de l'utilisateur est légitime. Est-ce que sa question relève du SAV ?
 Il s'agit du premier filtre avant tout engagement dans une autre étape.<br>
 <br>
 Le prompt répond un objet JSON true or false :<br>
@@ -46,9 +57,9 @@ Ce prompt a fait l'objet d'itérations successives à la suite de faux positifs 
 - Certaines questions hors-sujet parvenaient à être classée `true`. Il a fallu ajouter des consignes négative explicite et des exemples de Q/R variés.
 - La question "quel est le score du match, 3 à 1 ?" était classé `true`. La piste de confusion numérique explorée fut écartée lorsque d'autres questions comprenant divers pièges numériques se classaient correctement. La solution est venu de l'ajout du terme "actualité" dans la consigne.
 
-## 2. Classification d'intention
+## 3. Classification d'intention
 
-`INTENTION_PROMPT`dans `client_intention.py`
+`INTENTION_PROMPT`dans `user_intention.py`
 
 La question de l'utilisateur est examinée pour définir s'il s'agit d'une demande d'information (qui peut être traitée directement par le chatbot) ou une demande d'aide.
 <br>
@@ -60,9 +71,9 @@ La fonction `classify_intention()` traite la réponse :
 - Si `"info"`, la question passe et est transmise à `EXTRACTION_PROMPT`
 - Si `"aide"`, on stoppe la progression, un humain doit prendre le relais
 
-Par défaut la fonction retourne `aide`, en cas d'échec de parsing JSON, dans le doute on préfère rediriger le client vers l'aide humaine que de le laisser bloquer dans une recherche d'info sans issue.
+Par défaut la fonction retourne `aide`, en cas d'échec de parsing JSON, dans le doute on préfère rediriger l'utilisateur vers l'aide humaine que de le laisser bloquer dans une recherche d'info sans issue.
 
-## 3. Extraction du numéro de commande
+## 4. Extraction du numéro de commande
 
 `EXTRACTION_PROMPT`dans `extractor.py`
 
@@ -74,7 +85,7 @@ Le prompt répond un objet JSON numéro or null :<br>
 
 La fonction `extract_order_id()` traite la réponse :
 - Si `int` présent, la fonction `get_order_by_id()`(dans `db_request.py`) est appelée, celle-ci effectue la requête SQL et retourne les informations cherchées si elles existent.
-- Si `null`, une réponse négative est immédiatement envoyé au client, évitant une recherche SQL ivouée à l'échec.
+- Si `null`, une réponse négative est immédiatement envoyé à l'utilisateur, évitant une recherche SQL ivouée à l'échec.
 
 **Note de conception :**
 <br>
@@ -84,10 +95,10 @@ A noter que `EXTRACTION_PROMPT` fut le premier créé lors de la conception du p
 
 # Choix de conception
 
-## 3 prompts vs 1 prompt ?
-Un prompt unique qui fusionnerait routage + intention + extraction réduirait la latence mais augmenterait le risque d'erreurs lié à des confusions entre les différentes catégories. Ici le cadre sav e-commerce exigeant une fiabilité accrue pousse à privilégier l'efficacité plutôt que la rapidité.
+## 4 prompts vs 1 prompt ?
+Un prompt unique qui fusionnerait contextualisation + routage + intention + extraction réduirait la latence mais augmenterait le risque d'erreurs lié à des confusions entre les différentes catégories. Ici le cadre sav e-commerce exigeant une fiabilité accrue pousse à privilégier l'efficacité plutôt que la rapidité.
 
 ## Pourquoi pas text-to-SQL ?
 
-Ici j'ai pris le partie de ne pas utiliser de text-to-SQL. Ne pas laisser de LLM générer du SQL permet de s'assurer qu'aucune manipulation malveillante n'est possible via le prompt.<br>
+Ici j'ai pris le parti de ne pas utiliser de text-to-SQL. Ne pas laisser de LLM générer du SQL permet de s'assurer qu'aucune manipulation malveillante n'est possible via le prompt.<br>
 Dans ce projet le user_id est injecté dès le départ par le code et jamais extrait du texte par le LLM ce qui garanti une bonne sécurité.

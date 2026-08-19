@@ -19,20 +19,30 @@ Mettre en place un assistant de chat automatisé capable de répondre aux questi
 ### Etape 1 : récupération des informations
 
 - Création du fichier `db_request.py` qui inclu la requête SQL et le formatage de la réponse en langage naturel.
-- Création du fichier `extractor.py` qui inlcu `EXTRACTION_PROMPT` permettant d'extraire un numéro de commande de la question du client.
+- Création du fichier `extractor.py` qui inlcu `EXTRACTION_PROMPT` permettant d'extraire un numéro de commande de la question de l'utilisateur.
 - Création du fichier `llm_setup.py` mettant en place le modèle llm (Mistral-7B-Instruct-v0.3-Q4_K_M.gguf), j'utilise ici le même modèle que pour le projet précédent d'Agent conversationnel RAG 
-- Création du fichier `pipeline.py` permettant de tester un premier flux : question > `EXTRACTION_PROMPT` > requête SQL > réponse
+- Création du fichier `pipeline.py` permettant de tester un premier flux :<br>
+*question > `EXTRACTION_PROMPT` > requête SQL > réponse*
 
 ### Etape 2 : comportement du bot
 
-- Création du fichier `client_intention.py` qui inclu `INTENTION_PROMPT` permettant de classer la demande du client entre info géréé par le bot ou aide redirigée vers un humain.
-- Mise à jour du fichier `pipeline.py` pour tester le flux : question > `INTENTION_PROMPT` > `EXTRACTION_PROMPT` > requête SQL > réponse
+- Création du fichier `user_intention.py` qui inclu `INTENTION_PROMPT` permettant de classer la demande de l'utilisateur entre info géréé par le bot ou aide redirigée vers un humain.
+- Mise à jour du fichier `pipeline.py` pour tester le flux :<br>
+*question > `INTENTION_PROMPT` > `EXTRACTION_PROMPT` > requête SQL > réponse*
 
-### Etape 3 : protetion des données et routage sémantique
+### Etape 3 : protection des données et routage sémantique
 
-- Création du fichier `router.py` qui inclu `ROUTER_PROMPT` permettant de classer la question du client entre hors-sujet ou relatif au sav.
+- Création du fichier `router.py` qui inclu `ROUTER_PROMPT` permettant de classer la question de l'utilisateur entre hors-sujet ou relatif au sav.
 - Mise à jour du fichier `db_request.py` pour inclure le `user_id` comme clé de sécurité à la requête SQL.
-- Mise à jour du fichier `pipeline.py` pour injecter le `user_id` et tester le flux complet : question > `ROUTER_PROMPT` > `INTENTION_PROMPT` > `EXTRACTION_PROMPT` > requête SQL > réponse
+- Mise à jour du fichier `pipeline.py` pour injecter le `user_id` et tester le flux complet :<br>
+*question > `ROUTER_PROMPT` > `INTENTION_PROMPT` > `EXTRACTION_PROMPT` > requête SQL > réponse*
+
+### Etape 4 : Contextualisation de la question via l'historique de conversation
+
+- Création du fichier `contextualizer.py` qui inlcu `CONTEXTUALIZE_PROMPT`permettant de reformuler le dernier message de l'utilisateur en question autonome à partir de l'historique de conversation.
+- Mise à jour du fichier `pipeline.py` pour inclure cette étape de contextualisation et maintenir l'historique de conversation à jour.
+- Test du nouveau flux :<br>
+*question > `CONTEXTUALIZE_PROMPT` > `ROUTER_PROMPT` > `INTENTION_PROMPT` > `EXTRACTION_PROMPT` > requête SQL > réponse*
 
 ## Choix et templates de prompts :
 
