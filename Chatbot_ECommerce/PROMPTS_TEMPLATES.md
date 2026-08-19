@@ -1,7 +1,7 @@
 # Templates de prompts
 
-Le pipeline se base sur l'utilisation de trois prompts avec chacun leur rôle respectif.
-`ROUTER_PROMPT`, `INTENTION_PROMPT`, `EXTRACTION_PROMPT`
+Le pipeline se base sur l'utilisation de quatre prompts avec chacun leur rôle respectif.
+`CONTEXTUALIZE_PROMPT`,`ROUTER_PROMPT`, `INTENTION_PROMPT`, `EXTRACTION_PROMPT`
 
 ## Architecture générale du pipeline (`pipeline.py`)
 
