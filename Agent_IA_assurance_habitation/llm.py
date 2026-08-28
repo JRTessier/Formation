@@ -17,7 +17,7 @@ def load_llm(temperature: float = 0.0) -> ChatLlamaCpp:
     Le chemin du fichier est lu depuis la variable d'ennvironnement
     MODEL_PATH (à définir dans un .env local, différent par machine)
     """
-    model_path = os.environ.get("MODEL_PATH")
+    model_path = os.environ.get("LLM_MODEL_PATH")
     if not model_path:
         raise RuntimeError(
             "Variable d'environnement MODEL_PATH non définie."

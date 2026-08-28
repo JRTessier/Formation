@@ -90,14 +90,14 @@ CHECKLISTS: dict[str, dict[str, str]] = {
 # On ajoute la définition officielles de l'assurance pour chacun des types de sinistre à traiter.
 DEFINITIONS_SINISTRE: dict[str, str] = {
     "degat_des_eaux": (
-        "Fuites, ruptures de canalisation, infiltrations."
-        "Débordement d’appareils électroménagers (lave-linge, lave-vaisselle, etc.)."
+        "Fuites, ruptures de canalisation, infiltrations. "
+        "Débordement d’appareils électroménagers (lave-linge, lave-vaisselle, etc.). "
         "Dommages causés aux voisins (responsabilité civile)."),
     "incendie": (
-        "Incendie, explosion, implosion."
+        "Incendie, explosion, implosion. "
         "Fumées accidentelles."),
     "vol": (
-        "Vol avec effraction ou agression."
+        "Vol avec effraction ou agression. "
         "Détérioration lors d’une tentative de vol."
     )
 }

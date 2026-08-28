@@ -23,8 +23,8 @@ Agent IA Déclaration
         v
 Agent IA Validation
         |
-        |   si non valide
-        |<-----------------> Human-in-the-loop
+        |   si non conforme
+        |------------------> Rejet
         v
 Agent IA Expertise
         |
@@ -35,7 +35,7 @@ Agent IA Expertise
 
 # Trois Agents IA
 ## Agent IA Déclaration
-L'agent IA Déclaration guide l'assuré dans la saisie (photos, documents, délais légaux).
+L'agent IA Déclaration guide l'assuré dans la saisie de sa déclaration (photos, documents, délais légaux).
 
 Ce qui est attendu de la part de l'assuré :
 
@@ -83,9 +83,41 @@ Checklist:
 - Facture des biens si possible
 - Garanties des biens si possible
 
+L'agent s'assure que le dépôt de déclaration de l'assuré contient bien les éléments requis.
+S'il manque un élément, le dépôt se met en pause et attend un complement d'information de la part de l'assuré avant de pouvoir être finalisé (Human-in-the-Loop).
+
 ## Agent IA Validation
+
+L'agent IA Validation traite les données de la déclaration afin de vérifier leur conformité.
+
+### Date légal de dépôt de déclaration
+
+Un LLM extrait la date du sinistre à partir du message original de l'assuré.<br>
+La fonction `verifier_delai()` calcule le delai écoulé entre la date du sinistre et celle de la réception de la déclaration. Puis elle vérifie que ce delai est conforme avec les obligations prévues dans le contrat et propre à chaque type de sinistre.
+
+### Conformité des photos
+
+Un modèle VLM analyse les photos fournie afin de déterminer si elles correspondent au type de sinistre déclaré.
+
+### Decision
+
+Si tous les éléments sont conforme, le dossier est considéré comme valide, il sera tranmis à l'Agent IA Expertise (via l'orchestration).
+Si des éléments ne sont pas conforme, le dossier est rejeté et l'assurée sera notifié.
+
+---
+Note:<br>
+*Par manque de données dans les fichiers d'exemples de pièces jointes, ne sont pas traités les cas de divers documents administratifs (factures, PV, garanties...)*
+
 ## Agent IA Expertise
 
 # Point technique
 - Préférant travailler en local, je reste sur le modèle plus léger `mistral-7b-Instruct`. Avec l'utilisation de `ChatLlamaCpp` me permettant d'alterner au besoin mes postes de travail entre Mac et Windows.
 - Le chargement du modèle se fait dans un script séparé `llm.py` et son chemin est géré via le fichier `.env` pour plus de flexibilité.
+
+
+(mmproj est un encoder CLIP 
+le comptage et liste numéroté est un defaut connu de LlaVa a prendre en compte dans le prompt, le modèle a tendance à compter des éléments lorsqu'on lui demande une description.)
+
+Moondream2 (M87 Labs, Apache-2.0) utilisé pour la vision, suite à un bug reproductible de Llava15ChatHandler dans llama-cpp-python 0.3.35
+
+Suite à l'échec avec Moondream2 (bug similaire, résultats décevants), il a été décidé d'avancer sur la contruction des agents et de l'orchestration avant de tester un nouveau VLM dans une sandbox.
