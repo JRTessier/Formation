@@ -1,3 +1,7 @@
+"""
+Permet d'obtenir un rapport complet avec les premières estimations sur photos du sinistre déclaré.
+"""
+
 import re
 import asyncio
 
@@ -174,7 +178,7 @@ async def expertiser_dossier(
     indemnisation = calculer_montant_indemnisation("degat_des_eaux", fourchette["cout_min"], fourchette["cout_max"])
     print(indemnisation)"""
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     import asyncio
 
     from llm import load_llm
@@ -198,4 +202,4 @@ if __name__ == "__main__":
         )
         print(resultat["rapport"])
 
-    asyncio.run(main())
+    asyncio.run(main())"""

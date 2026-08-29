@@ -86,16 +86,16 @@ def analyser_image(llm: Llama, chemin_image: str, query: str) -> str:
                     {"type": "image_url", "image_url": {"url": data_uri}},
                 ],
             }
-        ]
+        ],
+        max_tokens=300, # On limite la longueur de la réponse, pas besoin d'écrire un roman et évite les défauts de répétitions
     )
-    max_tokens=300, # On limite la longueur de la réponse, pas besoin d'écrire un roman et évite les défauts de répétitions
     return reponse["choices"][0]["message"]["content"] # format dictionnaire hérité du standard API OpenAI
 
 
 # TEST
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     llm = load_vlm()
 
     chemin_test = "/Users/JR/Desktop/Blent/Projets/Agent_IA_assurance_habitation/data/exemples_pj/NaturalDamage_432.jpg"
     reponse = analyser_image(llm, chemin_test, "Décrit l'image suivante en une seule phrase.")
-    print(reponse)
+    print(reponse)"""

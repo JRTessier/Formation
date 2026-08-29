@@ -1,4 +1,6 @@
-"""..."""
+"""
+S'assure de la validité de tous les éléments du dossier.
+"""
 
 import json
 import re
@@ -234,8 +236,9 @@ async def valider_dossier(
     else:
         photo = {"correspond": "incertain", "reponse_brut": None}
 
-    return decider_validation(delai, photo)
-
+    decision = decider_validation(delai, photo)
+    decision["delai"] = delai # pour être transmis à l'Agent IA Expertise
+    return decision
 
 
 # TEST
@@ -264,7 +267,7 @@ async def valider_dossier(
 
     asyncio.run(main())"""
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     import asyncio
 
     from llm import load_llm
@@ -287,7 +290,7 @@ if __name__ == "__main__":
         )
         print(resultat)
 
-    asyncio.run(main())
+    asyncio.run(main())"""
 
 
 """if __name__ == "__main__":

@@ -285,7 +285,7 @@ async def recevoir_declaration(llm, message: str) -> dict:
     }
 
 # TEST
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     import asyncio
     from llm import load_llm
 
@@ -298,4 +298,4 @@ if __name__ == "__main__":
         resultat = await recevoir_declaration(llm, declaration_test)
         print(json.dumps(resultat, indent=2, ensure_ascii=False))
 
-    asyncio.run(main())
+    asyncio.run(main())"""

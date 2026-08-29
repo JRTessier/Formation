@@ -10,7 +10,9 @@ Dans le cadre de ce projet Hands-On, nous nous concentrerons uniquement sur les 
 # Architecture du pipeline
 
 L'architecture s'inspire d'un pattern Plan-and-Execute. Mais ici le plan étant déjà fixé par le processus de gestion des sinistres, nous préfèrerons ne pas déléguer la tâche de plannification à un LLM qui laisserait la porte ouverte à d'éventuelles erreurs et ajouterait un appel inutile.
-Nous implémentons également des étapes Human-in-the-Loop afin de fluidifier l'expérience de l'utilisateur.
+
+C'est donc `orchestration.py` qui s'occupe de dérouler le pipeline ci-dessous.
+A noter que nous implémentons également une étape Human-in-the-Loop gérée par l'agent IA Déclaration afin de fluidifier l'expérience de l'utilisateur.
 ```
 Entrée de l'utilisateur
         |
@@ -18,8 +20,8 @@ Entrée de l'utilisateur
         v
 Agent IA Déclaration
         |
-        |   si imcomplet
-        |<-----------------> Human-in-the-loop
+        |   si incomplet
+        |<-----------------> Human-in-the-loop (géré par l'agent lui-même)
         v
 Agent IA Validation
         |
@@ -30,10 +32,12 @@ Agent IA Expertise
         |
         |
         v
+Transmission d'un rapport à un conseiller
 ```
 
 
 # Trois Agents IA
+
 ## Agent IA Déclaration
 L'agent IA Déclaration guide l'assuré dans la saisie de sa déclaration (photos, documents, délais légaux).
 

@@ -8,10 +8,12 @@ from langgraph.types import interrupt, Command
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from llm import load_llm
+from datetime import date
 
 class DeclarationState(TypedDict):
     message: str
     resultat: dict | None
+    date_reception: str
 
 # --- Noeuds ---
 async def _node_recevoir(llm, state: DeclarationState) -> DeclarationState:
@@ -69,7 +71,12 @@ async def init_declaration(message_initial: str, db_path: str = "checkpoints.db"
         thread_id = secrets.token_hex(8)
         config = {"configurable": {"thread_id": thread_id}}
 
-        resultat = await _execution_graph(graph, {"message": message_initial, "resultat": None}, config)
+        etat_initial = {
+            "message": message_initial,
+            "resultat": None,
+            "date_reception": date.today().isoformat(),
+        }
+        resultat = await _execution_graph(graph, etat_initial, config)
 
     resultat["thread_id"] = thread_id
     return resultat
@@ -87,7 +94,7 @@ async def update_declaration(thread_id: str, reponse_assure: str, db_path: str =
 async def _execution_graph(graph, entree, config: dict) -> dict:
     dernier_step = None
     async for step in graph.astream(entree, config=config):
-        _afficher_etape_DEBUG(step)
+        #_afficher_etape_DEBUG(step)
         dernier_step = step
 
     node_name = list(dernier_step.keys())[0]
@@ -98,7 +105,8 @@ async def _execution_graph(graph, entree, config: dict) -> dict:
         }
     return {
         "status": "complet",
-        "resultat": dernier_step[node_name]["resultat"]
+        "resultat": dernier_step[node_name]["resultat"],
+        "date_reception": dernier_step[node_name]["date_reception"],
     }
 
 # DEBUG
@@ -111,7 +119,8 @@ def _afficher_etape_DEBUG(step: dict) -> None:
         print(f"[{node_name}]", step[node_name].get("resultat"))
 
 # TEST
-async def main():
+
+"""async def main():
     declaration_test_incomplete = (
         "Mon PC a explosé et mon bureau a pris feu ! Regardez la photo ! En plus il était tout neuf. Voici l'inventaire des biens détruits:"
         "- PC gamer AMD Ryzen 5 5500"
@@ -136,4 +145,4 @@ async def main():
         print("Dossier déjà complet.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main())"""
