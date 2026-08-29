@@ -99,23 +99,3 @@ if __name__ == "__main__":
     chemin_test = "/Users/JR/Desktop/Blent/Projets/Agent_IA_assurance_habitation/data/exemples_pj/NaturalDamage_432.jpg"
     reponse = analyser_image(llm, chemin_test, "Décrit l'image suivante en une seule phrase.")
     print(reponse)
-
-
-def analyser_image_complet(llm: Llama, chemin_image: str, question: str) -> dict:
-    """Comme analyser_image(), mais retourne la réponse complète de
-    create_chat_completion (utile pour diagnostiquer via finish_reason,
-    usage, etc.) plutôt que juste le texte extrait."""
-    data_uri = _image_vers_data_uri(chemin_image)
-
-    return llm.create_chat_completion(
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": data_uri}},
-                    {"type": "text", "text": question},
-                ],
-            }
-        ],
-        max_tokens=300,
-    )

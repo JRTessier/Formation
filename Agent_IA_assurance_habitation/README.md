@@ -39,7 +39,7 @@ L'agent IA Déclaration guide l'assuré dans la saisie de sa déclaration (photo
 
 Ce qui est attendu de la part de l'assuré :
 
-### Dégâts des eaux
+### Dégâts des eaux :
 - Date du sinistre
 - Déclarer le sinistre sous 5 jours ouvrés.
 - Fournir photos/vidéos des dégâts, factures si disponibles.
@@ -52,7 +52,7 @@ Checklist:
 - Factures des éléménents endommagés si possibles
 - Si implique le voisinage ou un tier -> constat amiable
 
-### Incendie / explosion
+### Incendie / explosion :
 - Date du sinistre
 - Avertir immédiatement les pompiers.
 - Déclaration de sinistre sous 5 jours.
@@ -66,9 +66,9 @@ Checklist:
 - Photos/vidéos des biens détruits
 - Factures des biens détruits
 
-*note: on ignorera si l'assuré à porter plainte car cette information n'est pas nécessaire pour la validation et l'étude du dossier.*
+*note: on ignorera si l'assuré a porté plainte car cette information n'est pas nécessaire pour la validation et l'étude du dossier.*
 
-### Vol, cambriolage, vandalisme
+### Vol, cambriolage, vandalisme :
 - Date du sinistre
 - Dépôt de plainte sous 24h.
 - Déclaration sous 2 jours ouvrés.
@@ -83,23 +83,24 @@ Checklist:
 - Facture des biens si possible
 - Garanties des biens si possible
 
-L'agent s'assure que le dépôt de déclaration de l'assuré contient bien les éléments requis.
+<br>
+Via un modèle LLM, l'agent s'assure que le dépôt de déclaration de l'assuré contient bien les éléments requis.
 S'il manque un élément, le dépôt se met en pause et attend un complement d'information de la part de l'assuré avant de pouvoir être finalisé (Human-in-the-Loop).
 
 ## Agent IA Validation
 
 L'agent IA Validation traite les données de la déclaration afin de vérifier leur conformité.
 
-### Date légal de dépôt de déclaration
+### Date légal de dépôt de déclaration :
 
-Un LLM extrait la date du sinistre à partir du message original de l'assuré.<br>
+Un modèle LLM extrait la date du sinistre à partir du message original de l'assuré.<br>
 La fonction `verifier_delai()` calcule le delai écoulé entre la date du sinistre et celle de la réception de la déclaration. Puis elle vérifie que ce delai est conforme avec les obligations prévues dans le contrat et propre à chaque type de sinistre.
 
-### Conformité des photos
+### Conformité des photos :
 
-Un modèle VLM analyse les photos fournie afin de déterminer si elles correspondent au type de sinistre déclaré.
+Un modèle VLM analyse les photos fournie afin de déterminer si elles correspondent bien au type de sinistre déclaré.
 
-### Decision
+### Decision :
 
 Si tous les éléments sont conforme, le dossier est considéré comme valide, il sera tranmis à l'Agent IA Expertise (via l'orchestration).
 Si des éléments ne sont pas conforme, le dossier est rejeté et l'assurée sera notifié.
@@ -109,6 +110,24 @@ Note:<br>
 *Par manque de données dans les fichiers d'exemples de pièces jointes, ne sont pas traités les cas de divers documents administratifs (factures, PV, garanties...)*
 
 ## Agent IA Expertise
+
+### Gravité :
+
+Un modèle VLM analyse les images fournies afin de déterminer la gravité du sinistre selon trois niveaux : léger, modéré, grave.
+
+Si le dossier contient plusieurs photos, on gardera la gravité la plus évelée répérée sur l'ensemble des photos.
+
+### Montant de l'indemnisation :
+
+Une fourchette du montant de l'indemnisation est calculée à partir du coût total estimé et de la franchise et selon les plafonds définis dans le contrat de garanties.
+
+On utilise un pourcentage dépendant de la gravité et le plafond défini pour estimer le coût total. Le résultat reste approximatif et constitut uniquement un aperçu d'un montant qui sera à évaluer précisément par un expert humain.
+
+A noter qu'aucun appel à un modèle LLM ou VLM n'est nécessaire pour cette étape.
+
+### Rapport :
+
+Un rapport complet des éléments définis ci-dessus est généré par un modèle LLM. Il consitue ainsi un premier aperçu du dossier avec les premières estimations avant qu'un conseillé humain ne prenne le relais.
 
 # Point technique
 - Préférant travailler en local, je reste sur le modèle plus léger `mistral-7b-Instruct`. Avec l'utilisation de `ChatLlamaCpp` me permettant d'alterner au besoin mes postes de travail entre Mac et Windows.
