@@ -143,11 +143,11 @@ Ce choix n'est pas déterminé par un appel llm, uniquement déduit logiquement 
 Un golden set est mis en place afin d'évaluer les performances des agents IA.<br>
 
 On test 3 cas par type de sinsitre :
-- Une declaration complète et conforme
+- Une déclaration complète et conforme
 - Une déclaration incomplète
 - Une déclaration complète mais non conforme
 
-A la fin de l'évaluation `evaluation.py` consigne l'ensemble des résultats dans le fichier `goldent_dataset_resultats.csv`.
+A la fin de l'évaluation `evaluation.py` consigne l'ensemble des résultats dans le fichier `golden_dataset_resultats.csv`.
 
 ## Agent IA Déclaration :
 
