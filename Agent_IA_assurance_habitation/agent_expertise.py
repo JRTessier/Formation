@@ -6,7 +6,7 @@ import re
 import asyncio
 
 from donnees_contrat import DEFINITIONS_SINISTRE, GARANTIES
-from Agent_IA_assurance_habitation.vlm import analyser_image
+from vlm import analyser_image
 from langchain_core.messages import HumanMessage
 
 # --- ESTIMATION DE LA GRAVITE ---
@@ -32,10 +32,15 @@ QUESTIONS_GRAVITE: dict[str, str] = {
 def _extraire_gravite(texte: str) -> str:
     """Utilise le dictionnaire GRAVITES pour récupérer le mot-clé de gravité dans la réponse du VLM"""
     texte_lower = texte.lower()
-    niveaux_presents = [g for g in GRAVITES if re.search(rf"\b{g}\b", texte_lower)]
-    if len(niveaux_presents) == 1:
-        return niveaux_presents[0]
-    return "grave"
+    dernieres_positions ={}
+    for g in GRAVITES:
+        for m in re.finditer(rf"\b{g}\b", texte_lower):
+            dernieres_positions[g] = m.start() # on garde la dernière occurence au cas où le modèle ai énuméré les différents niveaux dans sa réponse.
+
+    if not dernieres_positions:
+        return "grave"
+    return max(dernieres_positions, key=dernieres_positions.get)
+
 
 # Lancement de l'analyse de l'image par le VLM
 def evaluer_gravite_photo(vlm, chemin_image: str, type_sinistre: str) -> dict:

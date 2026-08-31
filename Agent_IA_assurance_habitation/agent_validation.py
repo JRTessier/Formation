@@ -8,7 +8,7 @@ import re
 from datetime import date, timedelta
 from langchain_core.messages import HumanMessage
 from donnees_contrat import DEFINITIONS_SINISTRE, GARANTIES
-from Agent_IA_assurance_habitation.vlm import analyser_image
+from vlm import analyser_image
 
 
 # --- VALIDITE DU DELAI DE DECLARATION ---
@@ -148,14 +148,13 @@ def verifier_delai(type_sinistre: str, date_sinistre: date | None, date_receptio
 
 
 # --- VALIDITE DES IMAGES FOURNIES ---
-# Création de la question à partir des catégories définies
 def _construire_question_vlm(type_sinistre: str) -> str:
     """Construit la question à partir du type de sinistre défini"""
     definition = DEFINITIONS_SINISTRE[type_sinistre]
     return (
         f"Dans le contrat d'assurance habitation, le type de sinistre '{type_sinistre}' correspond à : {definition} " 
-        "Cette image montre-t-elle des éléments visuels cohérents avec ce type de sinistre ?\n\n"
-        "Ta réponse doit être EXACTEMENT l'un de ces trois mots, en toutes lettres, sans rien ajouter d'autre : oui / non / incertain. "
+        "Décris brièvement ce que tu observes sur cette image puis conclu si elle montre des éléments visuels cohérents avec ce type de sinistre.\n\n"
+        "Termne ta réponse par l'un de ces trois mots, en toutes lettres : oui / non / incertain. "
         "Exemple de réponse correcte : oui\n\n"
         ""
     )

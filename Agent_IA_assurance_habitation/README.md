@@ -167,3 +167,5 @@ Le choix du prestataire ne necessite aucune évaluation pertinente car ce résul
 - Le tic de comptage et de listes numérotés est un défaut connu de `LlaVa` à prendre en compte dans le prompt, le modèle a tendance à compter des éléments lorsqu'on lui demande une description.
 - Nouveau test de modèle avec `Moondream2` (M87 Labs, Apache-2.0) utilisé pour la vision, suite à un bug reproductible de `Llava15ChatHandler` dans `llama-cpp-python 0.3.35`
 - Suite à l'échec avec `Moondream2` (bug similaire, résultats décevants), il a été décidé d'avancer sur la construction des agents et de l'orchestration avant de tester un nouveau VLM dans une sandbox. L'architecture du projet permet de modifier rapidement les modèles utilisés.
+- Deux versions de `vlm.py`. Une version `vlm_UNIVERSAL.py` utilisant `Llava` et fonctionnant sur Mac et Windows. Une version `vlm_CUDA.py` non compatible Mac utilisant `Llama 3.2 Vision` en reprenant l'architecture présentée dans les notebook de la formation.<br>
+Supprimer le suffixe pour activer l'une ou l'autre.
