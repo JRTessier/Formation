@@ -82,7 +82,7 @@ if __name__ == "__main__":
     from graph_declaration import init_declaration, update_declaration
 
     from llm import load_llm
-    from Agent_IA_assurance_habitation.vlm import load_vlm
+    from vlm import load_vlm
 
     async def main():
         message_test = (

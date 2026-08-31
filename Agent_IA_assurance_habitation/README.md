@@ -140,7 +140,8 @@ Ce choix n'est pas déterminé par un appel llm, uniquement déduit logiquement 
 
 # Evaluation des agents
 
-Un golden set est mis en place afin d'évaluer les performances des agents IA.
+Un golden set est mis en place afin d'évaluer les performances des agents IA.<br>
+A la fin de l'évaluation `evaluation.py` consigne l'ensemble des résultats dans le fichier `goldent_dataset_resultats.csv`.
 
 ## Agent IA Déclaration :
 

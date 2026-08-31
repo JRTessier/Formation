@@ -20,7 +20,7 @@ def load_vlm() -> dict:
 
 #
 def analyser_image(vlm: dict, chemin_image: str, query: str) -> str:
-    """envoie une image + une question au VLM et reçoit une réponse texte en retour"""
+    """Envoie une image + une question au VLM et reçoit une réponse texte en retour"""
     model = vlm["model"]
     processor = vlm["processor"]
 
@@ -56,9 +56,9 @@ def analyser_image(vlm: dict, chemin_image: str, query: str) -> str:
 
 
 # TEST
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     vlm = load_vlm()
 
-    chemin_test = "/chemin/vers/une/image.jpg"  # à adapter dans le sandbox
+    chemin_test = "/workspace/Formation/Agent_IA_assurance_habitation/data/exemples_pj/FireDamage_31.jpg"  # à adapter dans le sandbox
     reponse = analyser_image(vlm, chemin_test, "Décris cette image en une phrase.")
-    print(reponse)
+    print(reponse)"""
