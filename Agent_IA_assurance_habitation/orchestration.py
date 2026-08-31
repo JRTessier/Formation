@@ -5,7 +5,26 @@ Orchestration du pipeline avec les trois agents IA (Declaration, Validation, Exp
 from datetime import date
 from agent_validation import valider_dossier
 from agent_expertise import expertiser_dossier
+from donnees_contrat import PRESTATAIRES
 
+# Identification du prestaire
+def identifier_prestataires(type_sinistre: str, gravite: str) -> dict:
+    """Identifie le/les prestataire(s) necessaires en fonction du type et de la gravite du sinistre selon les règles établies dans le conttrat"""
+    regles = PRESTATAIRES[type_sinistre]
+    prestataires = list(regles["systematique"])
+    a_verifier_manuellement = False
+
+    conditionnel = regles["conditionnel"]
+    if conditionnel is not None:
+        if gravite == "inconnue":
+            a_verifier_manuellement = True # Pas de photo exploitable, necessite une vérification humaine
+        elif gravite == conditionnel["si_gravite"]:
+            prestataires.append(conditionnel["prestataire"])
+
+    return {"prestataires": prestataires, "a_verifier_manuellement": a_verifier_manuellement}
+
+
+# Pipeline complet
 async def orchestrer_dossier(
     llm,
     vlm,
@@ -45,8 +64,15 @@ async def orchestrer_dossier(
         chemins_photos=chemins_photos,
     )
 
+    prestataires = identifier_prestataires(type_sinistre, expertise["gravite"])
+
     # Retour assuré avec 
-    return  {"status": "transmission_conseiller", "validation": validation, "expertise": expertise}
+    return  {
+        "status": "transmission_conseiller",
+        "validation": validation,
+        "expertise": expertise,
+        "prestataires:": prestataires,
+    }
 
 
 # TEST — cycle complet, du message initial jusqu'à Expertise
@@ -56,7 +82,7 @@ if __name__ == "__main__":
     from graph_declaration import init_declaration, update_declaration
 
     from llm import load_llm
-    from vlm import load_vlm
+    from Agent_IA_assurance_habitation.vlm import load_vlm
 
     async def main():
         message_test = (

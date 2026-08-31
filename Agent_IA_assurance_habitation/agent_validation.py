@@ -5,29 +5,10 @@ S'assure de la validité de tous les éléments du dossier.
 import json
 import re
 
-from datetime import date
+from datetime import date, timedelta
 from langchain_core.messages import HumanMessage
-from agent_declaration import DEFINITIONS_SINISTRE
-from vlm import analyser_image
-
-# Définitions des garanties par type de sinistre
-GARANTIES: dict[str, dict] = {
-    "degat_des_eaux": {
-        "plafond": 25000,
-        "franchise": 150,
-        "delai_declaration": 5,
-    },
-    "incendie": {
-        "plafond": 100000,
-        "franchise": 300,
-        "delai_declaration": 5,
-    },
-    "vol": {
-        "plafond": 20000,
-        "franchise": 200,
-        "delai_declaration": 2,
-    },
-}
+from donnees_contrat import DEFINITIONS_SINISTRE, GARANTIES
+from Agent_IA_assurance_habitation.vlm import analyser_image
 
 
 # --- VALIDITE DU DELAI DE DECLARATION ---
@@ -45,7 +26,7 @@ Aujourd'hui nous sommes le {date_reference}.
 
 ### Entrée
 
-Aujourd'hui : 2026-08-20
+Aujourd'hui : 2026-03-15
 Message : "Bonjour,
 
 Il y a eu une fuite dans ma cuisine hier soir à cause de mon voisin du dessus. Son lave-vaisselle a été mal installé et du coup, le mur est infiltré d'eau et la peinture se détache (ci-joint une photo).
@@ -56,26 +37,26 @@ Cordialement.
 
 ### Sortie
 
-Réponse : {{"date_sinistre": "2026-08-19"}}
+Réponse : {{"date_sinistre": "2026-03-14"}}
 
 
 ## Exemple
 
 ### Entrée
 
-Aujourd'hui : 2026-08-20
+Aujourd'hui : 2025-11-02
 Message : "Bonjour, on m'a cambriolé ce matin, les voleurs sont passés par le vélux de la chambre et ont volé tous les appareils électroniques. Merci de me contacter rapidement."
 
 ### Sortie
 
-Réponse : {{"date_sinistre": "2026-08-20"}}
+Réponse : {{"date_sinistre": "2025-11-02"}}
 
 
 ## Exemple
 
 ### Entrée
 
-Aujourd'hui : 2026-08-20
+Aujourd'hui : 2027-01-08
 Message : "Bonjour,
 
 Le 10/09/2025, un feu s'est déclaré dans la chambre à cause d'un appareil défectueux, et à endommager une grande partie de la pièce. Je souhaiterai être indemnisé pour pouvoir effectuer les travaux nécessaires.
@@ -94,7 +75,7 @@ Réponse : {{"date_sinistre": "2025-09-10"}}
 
 ### Entrée
 
-Aujourd'hui : 2026-08-20
+Aujourd'hui : 2026-06-24
 Message : "Bonjour, suite à un problème de plomberie chez moi, mon garage s'est retrouvé sous l'eau. Veuillez trouver plus de détails dans la photo ci-jointe. [Pièce jointe : garage.png]"
 
 ### Sortie
@@ -136,6 +117,20 @@ async def extraire_date_sinistre(llm, message: str, date_reference: date) -> dat
         print(f"[AVERTISSEMENT] Date invalide renvoyée par le LLM : {date_str!r}.traitée comme indéterminable.")
         return None
 
+# transforme le nombre de jours en jours ouvrés
+def _jours_ouvres(debut: date, fin: date) -> int:
+    """Compte le nombre de jours ouvrés entre deux dates. On simplifie en ne prenant pas en compte les jours fériés."""
+    if fin < debut:
+        return -_jours_ouvres(fin, debut)
+
+    jours = 0
+    jour_courant = debut
+    while jour_courant < fin:
+        jour_courant += timedelta(days=1)
+        if jour_courant.weekday() < 5:
+            jours += 1
+    return jours
+
 # Vérification du délai légal de déclaration du sinistre
 def verifier_delai(type_sinistre: str, date_sinistre: date | None, date_reception: date) -> dict:
     delai_max = GARANTIES[type_sinistre]["delai_declaration"]
@@ -143,7 +138,7 @@ def verifier_delai(type_sinistre: str, date_sinistre: date | None, date_receptio
     if date_sinistre is None:
         return {"statut": "indeterminable", "jours_ecoules": None, "delai_max_jours": delai_max}
 
-    jours_ecoules = (date_reception - date_sinistre).days
+    jours_ecoules = _jours_ouvres(date_sinistre, date_reception)
 
     if jours_ecoules < 0:
         return {"statut": "anomalie", "jours_ecoules": jours_ecoules, "delai_max_jours": delai_max}
@@ -155,7 +150,7 @@ def verifier_delai(type_sinistre: str, date_sinistre: date | None, date_receptio
 # --- VALIDITE DES IMAGES FOURNIES ---
 # Création de la question à partir des catégories définies
 def _construire_question_vlm(type_sinistre: str) -> str:
-    """..."""
+    """Construit la question à partir du type de sinistre défini"""
     definition = DEFINITIONS_SINISTRE[type_sinistre]
     return (
         f"Dans le contrat d'assurance habitation, le type de sinistre '{type_sinistre}' correspond à : {definition} " 
@@ -173,7 +168,7 @@ QUESTIONS_VLM: dict[str, str] = {
 
 # Extraction d'une réponse simple depuis la réponse brute
 def _extraire_reponse_VLM(texte: str) -> str:
-    """..."""
+    """Extrait une réponse courte (oui, non, incertain) à partir de la réponse brute du LLM"""
     texte_lower = texte.lower()
     contient_oui = re.search(r"\boui\b", texte_lower) is not None
     contient_non = re.search(r"\bnon\b", texte_lower) is not None
@@ -184,9 +179,9 @@ def _extraire_reponse_VLM(texte: str) -> str:
         return "non"
     return "incertain"
 
-# Lancement de la verification visuel
+# Lancement de la verification visuelle
 def verifier_photo(vlm, chemin_image: str, type_sinistre: str) -> dict:
-    """"""
+    """Pipeline de l'analyse visuelle permettant de vérifier la conformité des photos par rapport au type de sinistre déclaré"""
     question = QUESTIONS_VLM[type_sinistre]
     reponse_brute = analyser_image(vlm, chemin_image, question)
     correspond = _extraire_reponse_VLM(reponse_brute)

@@ -119,7 +119,7 @@ Note:<br>
 
 Un modèle VLM analyse les images fournies afin de déterminer la gravité du sinistre selon trois niveaux : léger, modéré, grave.
 
-Si le dossier contient plusieurs photos, on gardera la gravité la plus évelée répérée sur l'ensemble des photos.
+Si le dossier contient plusieurs photos, on gardera la gravité la plus élevée répérée sur l'ensemble des photos.
 
 ### Montant de l'indemnisation :
 
@@ -133,14 +133,37 @@ A noter qu'aucun appel à un modèle LLM ou VLM n'est nécessaire pour cette ét
 
 Un rapport complet des éléments définis ci-dessus est généré par un modèle LLM. Il consitue ainsi un premier aperçu du dossier avec les premières estimations avant qu'un conseillé humain ne prenne le relais.
 
+## Orchestration :
+
+C'est au niveau de l'orchestration que s'effectue l'identification du prestataire. En effet ce choix dépend à la fois du type de sinistre défini dans l'Agent IA Déclaration et de la gravité des dégâts définie dans l'Agent IA Expertise.<br>
+Ce choix n'est pas déterminé par un appel llm, uniquement déduit logiquement à partir des données des deux agents IA.
+
+# Evaluation des agents
+
+Un golden set est mis en place afin d'évaluer les performances des agents IA.
+
+## Agent IA Déclaration :
+
+On évalue le type de sinistre ainsi que la complétude du dossier. On établit un F1-score à partir de ces deux valeurs.<br>
+La fonction `evaluer_declaration()` s'appuie directement sur les résultats des fonctions `recevoir_déclaration()` et `_caluculer_completude()` de l'agent IA Déclaration en comparaison avec le golden set.
+
+## Agent IA Validation :
+
+On évalue la justesse de la date du sinistre extraite ainsi que le delai du depot de la declaration.
+La fonction `evaluer_validation()` s'appuie directement sur les résultats des fonctions `extraire_date_sinistre()` et `verifier_delai` de l'agent IA Validation en comparaison avec le golden set.
+
+## Agent IA Expertise :
+
+*Explicitement exempté d'évaluation automatique par le brief.*
+
+## Orchestration :
+
+Le choix du prestataire ne necessite aucune évaluation pertinente car ce résultat dépend directement des données `type_sinistre` fournis par l'agent IA Déclaration et `gravite` fournis par l'agent IA Expertise.
+
 # Point technique
 - Préférant travailler en local, je reste sur le modèle plus léger `mistral-7b-Instruct`. Avec l'utilisation de `ChatLlamaCpp` me permettant d'alterner au besoin mes postes de travail entre Mac et Windows.
 - Le chargement du modèle se fait dans un script séparé `llm.py` et son chemin est géré via le fichier `.env` pour plus de flexibilité.
-
-
-(mmproj est un encoder CLIP 
-le comptage et liste numéroté est un defaut connu de LlaVa a prendre en compte dans le prompt, le modèle a tendance à compter des éléments lorsqu'on lui demande une description.)
-
-Moondream2 (M87 Labs, Apache-2.0) utilisé pour la vision, suite à un bug reproductible de Llava15ChatHandler dans llama-cpp-python 0.3.35
-
-Suite à l'échec avec Moondream2 (bug similaire, résultats décevants), il a été décidé d'avancer sur la contruction des agents et de l'orchestration avant de tester un nouveau VLM dans une sandbox.
+- A l'approche de l'intégration du VLM l'architecture `llama.cpp` divergeante des exemples du notebook (`transformers`+`bitsandbytes` s'appuie su CUDA, non compatible Mac) exige de passer par un mmproj (encoder CLIP). `Llama 3.2 Vision` utlisé dans les exemples n'est pas non plus compatible avec `llama.cpp`, ce qui nous pousse à utiliser `Llava`.
+- Le tic de comptage et de listes numérotés est un défaut connu de `LlaVa` à prendre en compte dans le prompt, le modèle a tendance à compter des éléments lorsqu'on lui demande une description.
+- Nouveau test de modèle avec `Moondream2` (M87 Labs, Apache-2.0) utilisé pour la vision, suite à un bug reproductible de `Llava15ChatHandler` dans `llama-cpp-python 0.3.35`
+- Suite à l'échec avec `Moondream2` (bug similaire, résultats décevants), il a été décidé d'avancer sur la construction des agents et de l'orchestration avant de tester un nouveau VLM dans une sandbox. L'architecture du projet permet de modifier rapidement les modèles utilisés.

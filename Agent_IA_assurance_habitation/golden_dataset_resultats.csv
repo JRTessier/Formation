@@ -1,0 +1,10 @@
+id,type_sinistre,type_sinistre_predit,type_sinistre_correct,complet_predit,complet_golden,complet_correct,f1_elements_manquants,date_sinistre_predite,date_sinistre_golden,date_correcte,statut_delai_predit,statut_delai_golden,statut_delai_correct
+1,degat_des_eaux,degat_des_eaux,True,True,True,True,1.0,2026-08-30,2026-08-29,False,valide,valide,True
+2,degat_des_eaux,degat_des_eaux,True,False,False,True,0.0,2026-05-14,2026-08-23,False,depasse,valide,False
+3,degat_des_eaux,degat_des_eaux,True,True,True,True,1.0,2026-08-05,2026-08-05,True,depasse,depasse,True
+4,incendie,incendie,True,False,True,False,0.0,2026-08-31,2026-08-28,False,anomalie,valide,False
+5,incendie,incendie,True,False,False,True,0.667,2026-06-21,2026-08-27,False,depasse,valide,False
+6,incendie,incendie,True,False,True,False,0.0,2026-06-16,2026-06-16,True,depasse,depasse,True
+7,vol,vol,True,False,True,False,0.0,2026-07-31,2026-08-29,False,depasse,valide,False
+8,vol,vol,True,False,False,True,0.667,2026-08-30,2026-08-30,True,valide,valide,True
+9,vol,vol,True,False,True,False,0.0,2026-08-20,2026-08-20,True,depasse,depasse,True

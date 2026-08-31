@@ -5,9 +5,8 @@ Permet d'obtenir un rapport complet avec les premières estimations sur photos d
 import re
 import asyncio
 
-from agent_declaration import DEFINITIONS_SINISTRE
-from vlm import analyser_image
-from agent_validation import GARANTIES
+from donnees_contrat import DEFINITIONS_SINISTRE, GARANTIES
+from Agent_IA_assurance_habitation.vlm import analyser_image
 from langchain_core.messages import HumanMessage
 
 # --- ESTIMATION DE LA GRAVITE ---
@@ -126,7 +125,7 @@ async def generer_rapport(
         cout: dict,
         indemnisation: dict,
 ) -> str:
-    """..."""
+    """Appel un modèle LLM pour générer un rapport complet du traitement du dossier"""
     prompt = PROMPT_RAPPORT.format(
         message=message,
         type_sinistre=type_sinistre,
